@@ -254,56 +254,6 @@ kmeshctl waypoint apply -n default --name productpage-waypoint1 --image ghcr.io/
 kubectl label service productpage istio.io/use-waypoint=productpage-waypoint1
 ```
 
-Create the Bookinfo Gateway.
-
-``` sh
-kubectl apply -f - << EOF
-apiVersion: networking.istio.io/v1
-kind: Gateway
-metadata:
-  name: bookinfo-gateway
-spec:
-  # The selector matches the ingress gateway pod labels.
-  # If you installed Istio using Helm following the standard documentation, this would be "istio=ingress"
-  selector:
-    gateway.networking.k8s.io/gateway-name: productpage-waypoint1
-  servers:
-  - port:
-      number: 8080
-      name: http
-      protocol: HTTP
-    hosts:
-    - "*"
----
-apiVersion: networking.istio.io/v1
-kind: VirtualService
-metadata:
-  name: bookinfo
-spec:
-  hosts:
-  - "*"
-  gateways:
-  - bookinfo-gateway
-  http:
-  - match:
-    - uri:
-        exact: /productpage
-    - uri:
-        prefix: /static
-    - uri:
-        exact: /login
-    - uri:
-        exact: /logout
-    - uri:
-        prefix: /api/v1/products
-    route:
-    - destination:
-        host: productpage
-        port:
-          number: 9080
-EOF
-```
-
 ### 3. Configure request rate limits
 
 Create a `ConfigMap` consumed by the rate limit service. It defines PATH-based descriptors that limit `/productpage` to 1 request/min, any `api` path to 2 requests/min, and all other paths to 100 requests/min.
@@ -356,11 +306,29 @@ metadata:
   namespace: default
 spec:
   workloadSelector:
-    # select by label in the same namespace
     labels:
       gateway.networking.k8s.io/gateway-name: productpage-waypoint1
   configPatches:
-    # The Envoy config you want to modify
+    - applyTo: CLUSTER
+      match:
+        context: SIDECAR_INBOUND
+      patch:
+        operation: ADD
+        value:
+          name: rate_limit_cluster
+          type: STRICT_DNS
+          connect_timeout: 0.25s
+          lb_policy: ROUND_ROBIN
+          http2_protocol_options: {}
+          load_assignment:
+            cluster_name: rate_limit_cluster
+            endpoints:
+            - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: ratelimit.default.svc.cluster.local
+                      port_value: 8081
     - applyTo: HTTP_FILTER
       match:
         context: SIDECAR_INBOUND
@@ -372,19 +340,17 @@ spec:
                 name: "envoy.filters.http.router"
       patch:
         operation: INSERT_BEFORE
-        # Adds the Envoy Rate Limit Filter in HTTP filter chain.
         value:
           name: envoy.filters.http.ratelimit
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.filters.http.ratelimit.v3.RateLimit
-            # domain can be anything! Match it to the ratelimter service config
             domain: ratelimit
             failure_mode_deny: true
             timeout: 10s
             rate_limit_service:
               grpc_service:
                 envoy_grpc:
-                  cluster_name: inbound|8081||ratelimit.default.svc.cluster.local
+                  cluster_name: rate_limit_cluster
                   authority: ratelimit.default.svc.cluster.local
               transport_api_version: V3
 EOF
@@ -428,7 +394,7 @@ EOF
 
 ``` sh
 kubectl apply -f ./samples/sleep/sleep.yaml
-
+sleep 3
 export SLEEP_POD=$(kubectl get pod -l app=sleep -o jsonpath='{.items[0].metadata.name}')
 ```
 
