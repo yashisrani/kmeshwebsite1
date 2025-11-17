@@ -234,12 +234,22 @@ This section shows how to use global rate limit service. You'll deploy a sample 
 
 Please read [Quick Start](https://kmesh.net/docs/setup/quick-start) to complete the deployment of kmesh.
 
-### 2. Deploy Bookinfo application
+### 2. Deploy httpbin
 
-Deploy the Bookinfo application.
+Deploy the httpbin application. 修改 `./samples/httpbin/httpbin.yaml` 中的 `replicas: 1` 为 `replicas: 2` 以确保有多个实例处理请求。
+
+``` yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+spec:
+  replicas: 2
+# ...
+```
 
 ``` sh
-kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.28/samples/bookinfo/platform/kube/bookinfo.yaml
+kubectl apply -f ./samples/httpbin/httpbin.yaml
 ```
 
 Create a waypoint for the productpage service.
@@ -250,13 +260,13 @@ kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || \
 ```
 
 ``` sh
-kmeshctl waypoint apply -n default --name productpage-waypoint1 --image ghcr.io/kmesh-net/waypoint:latest
-kubectl label service productpage istio.io/use-waypoint=productpage-waypoint1
+kmeshctl waypoint apply -n default --name httpbin-waypoint --image ghcr.io/kmesh-net/waypoint:latest
+kubectl label service httpbin istio.io/use-waypoint=httpbin-waypoint
 ```
 
 ### 3. Configure request rate limits
 
-Create a `ConfigMap` consumed by the rate limit service. It defines PATH-based descriptors that limit `/productpage` to 1 request/min, any `api` path to 2 requests/min, and all other paths to 100 requests/min.
+Create a `ConfigMap` consumed by the rate limit service. It defines PATH-based descriptors that limit `/status/200` to 1 request/min, and all other paths to 100 requests/min.
 
 ```sh
 kubectl apply -f - <<EOF
@@ -269,15 +279,10 @@ data:
     domain: ratelimit
     descriptors:
       - key: PATH
-        value: "/productpage"
+        value: "/status/200"
         rate_limit:
           unit: minute
           requests_per_unit: 1
-      - key: PATH
-        value: "api"
-        rate_limit:
-          unit: minute
-          requests_per_unit: 2
       - key: PATH
         rate_limit:
           unit: minute
@@ -295,7 +300,7 @@ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.27/samp
 
 ### 5. Configure EnvoyFilter to use the global rate limit service
 
-Insert the Envoy HTTP Rate Limit filter into the ingress gateway’s HTTP filter chain and point it at the `ratelimit` gRPC service.
+Insert the Envoy HTTP Rate Limit filter into the HTTP filter chain and point it at the `ratelimit` gRPC service.
 
 ```sh
 kubectl apply -f - <<EOF
@@ -307,7 +312,7 @@ metadata:
 spec:
   workloadSelector:
     labels:
-      gateway.networking.k8s.io/gateway-name: productpage-waypoint1
+      gateway.networking.k8s.io/gateway-name: httpbin-waypoint
   configPatches:
     - applyTo: CLUSTER
       match:
@@ -368,7 +373,7 @@ metadata:
 spec:
   workloadSelector:
     labels:
-      gateway.networking.k8s.io/gateway-name: productpage-waypoint1
+      gateway.networking.k8s.io/gateway-name: httpbin-waypoint
   configPatches:
     - applyTo: VIRTUAL_HOST
       match:
@@ -394,12 +399,12 @@ EOF
 
 ``` sh
 kubectl apply -f ./samples/sleep/sleep.yaml
-sleep 3
+sleep 10
 export SLEEP_POD=$(kubectl get pod -l app=sleep -o jsonpath='{.items[0].metadata.name}')
 ```
 
 ``` sh
-for i in {0..2}; do kubectl exec -it $SLEEP_POD -- curl -s "http://productpage:9080/productpage" -o /dev/null -w "%{http_code}\n"; sleep 1; done
+for i in {0..2}; do kubectl exec -it $SLEEP_POD -- curl -s "http://httpbin:8000/status/200" -o /dev/null -w "%{http_code}\n"; sleep 1; done
 ```
 
 Expected output:
