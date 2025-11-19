@@ -1,11 +1,11 @@
 --- 
-title: Local Rate Limiting
+title: Rate Limit
 sidebar_position: 11
 ---
 
-This document provides a step-by-step guide on how to test the local rate limiting and global rate limiting functionality of kmesh. It covers deploying the necessary components, configuring traffic rules, and observing the rate limiting behavior.
+This document provides a step-by-step guide on how to test the local rate limit and global rate limit functionality of kmesh. It covers deploying the necessary components, configuring traffic rules, and observing the rate limit behavior.
 
-## Local Rate Limiting
+## Local Rate Limit
 
 ### 1. Deploy Kmesh and istiod (>=1.24)
 
@@ -39,7 +39,7 @@ kubectl label service httpbin istio.io/use-waypoint=httpbin-waypoint
 
 ### 4. Deploy envoyFilter
 
-This `EnvoyFilter` resource injects a local rate-limiting filter into the `httpbin` service's Waypoint proxy. The filter is configured with the following rules:
+This `EnvoyFilter` resource injects a local rate-limit filter into the `httpbin` service's Waypoint proxy. The filter is configured with the following rules:
 
 - A request with the header `quota: low` will be limited to **1 request per 300 seconds**.
 - A request with the header `quota: medium` will be limited to **3 requests per 300 seconds**.
@@ -226,17 +226,17 @@ Expected output for the second command:
 local_rate_limited
 ```
 
-## Global Rate Limiting
+## Global Rate Limit
 
 This section shows how to use global rate limit service. You'll deploy a sample app, configure rate limit rules, enable the Envoy HTTP Rate Limit filter on the ingress gateway, and verify responses when limits are exceeded.
 
-### 1. Deploy Kmesh and istiod (>=1.24)
+### 1. Deploy Kmesh and istiod (>=1.24 && <=1.25)
 
 Please read [Quick Start](https://kmesh.net/docs/setup/quick-start) to complete the deployment of kmesh.
 
 ### 2. Deploy httpbin
 
-Deploy the httpbin application. 修改 `./samples/httpbin/httpbin.yaml` 中的 `replicas: 1` 为 `replicas: 2` 以确保有多个实例处理请求。
+Deploy the httpbin application. Change `replicas: 1` to `replicas: 2` in `./samples/httpbin/httpbin.yaml` to ensure multiple instances handle requests.
 
 ``` yaml
 apiVersion: apps/v1
@@ -395,7 +395,7 @@ spec:
 EOF
 ```
 
-### 6. Test rate limiting against Bookinfo
+### 6. Test rate limit against httpbin
 
 ``` sh
 kubectl apply -f ./samples/sleep/sleep.yaml
