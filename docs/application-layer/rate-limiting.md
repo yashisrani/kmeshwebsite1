@@ -230,7 +230,7 @@ local_rate_limited
 
 This section shows how to use global rate limit service. You'll deploy a sample app, configure rate limit rules, enable the Envoy HTTP Rate Limit filter on the ingress gateway, and verify responses when limits are exceeded.
 
-### 1. Deploy Kmesh and istiod (>=1.24 && <=1.25)
+### 1. Deploy Kmesh and istiod (>=1.24 and <=1.25)
 
 Please read [Quick Start](https://kmesh.net/docs/setup/quick-start) to complete the deployment of kmesh.
 
@@ -252,7 +252,7 @@ spec:
 kubectl apply -f ./samples/httpbin/httpbin.yaml
 ```
 
-Create a waypoint for the productpage service.
+Create a waypoint for the httpbin service.
 
 ``` sh
 kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || \
@@ -295,7 +295,7 @@ EOF
 Deploy the Envoy global rate limit service. It reads the `ratelimit-config` `ConfigMap` and exposes a gRPC endpoint used by the ingress gateway.
 
 ``` sh
-kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.27/samples/ratelimit/rate-limit-service.yaml
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.25/samples/ratelimit/rate-limit-service.yaml
 ```
 
 ### 5. Configure EnvoyFilter to use the global rate limit service
@@ -388,7 +388,7 @@ spec:
         # Applies the rate limit rules.
         value:
           rate_limits:
-            - actions: # any actions in here
+            - actions:
               - request_headers:
                   header_name: ":path"
                   descriptor_key: "PATH"
