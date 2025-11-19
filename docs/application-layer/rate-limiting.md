@@ -7,7 +7,7 @@ This document provides a step-by-step guide on how to test the local rate limit 
 
 ## Local Rate Limit
 
-### 1. Deploy Kmesh and istiod (>=1.24)
+### 1. Deploy Kmesh and istiod (version 1.24 or later)
 
 Please read [Quick Start](https://kmesh.net/docs/setup/quick-start) to complete the deployment of kmesh.
 
@@ -230,7 +230,7 @@ local_rate_limited
 
 This section shows how to use global rate limit service. You'll deploy a sample app, configure rate limit rules, enable the Envoy HTTP Rate Limit filter on the ingress gateway, and verify responses when limits are exceeded.
 
-### 1. Deploy Kmesh and istiod (>=1.24 and <=1.25)
+### 1. Deploy Kmesh and istiod (version 1.24 to 1.25)
 
 Please read [Quick Start](https://kmesh.net/docs/setup/quick-start) to complete the deployment of kmesh.
 
