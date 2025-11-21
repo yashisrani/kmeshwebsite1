@@ -411,5 +411,6 @@ Expected output:
 ```
 
 The output shows HTTP status codes:
+
 - **200**: OK. The request was successful.
 - **429**: Too Many Requests. The request was rejected because the rate limit was exceeded.
