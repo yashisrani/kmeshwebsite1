@@ -26,7 +26,7 @@ First, if you haven't installed the Kubernetes Gateway API CRDs, run the followi
 
 ``` sh
 kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || \
-  { kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=444631bfe06f3bcca5d0eadf1857eac1d369421d" | kubectl apply -f -; }
+  { kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=v1.4.0" | kubectl create -f -; }
 ```
 
 Next, create a dedicated Waypoint proxy for the `httpbin` service and label the service to direct its traffic through this Waypoint.
@@ -230,7 +230,7 @@ local_rate_limited
 
 This section shows how to use global rate limit service. You'll deploy a sample app, configure rate limit rules, enable the Envoy HTTP Rate Limit filter on the ingress gateway, and verify responses when limits are exceeded.
 
-### 1. Deploy Kmesh and istiod (version 1.24 to 1.25)
+### 1. Deploy Kmesh and istiod (version 1.24 to 1.26)
 
 Please read [Quick Start](https://kmesh.net/docs/setup/quick-start) to complete the deployment of kmesh.
 
@@ -252,12 +252,7 @@ spec:
 kubectl apply -f ./samples/httpbin/httpbin.yaml
 ```
 
-Create a waypoint for the httpbin service.
-
-``` sh
-kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || \
-  { kubectl kustomize "github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=444631bfe06f3bcca5d0eadf1857eac1d369421d" | kubectl apply -f -; }
-```
+Create a waypoint for the httpbin service. If you haven't installed the Kubernetes Gateway API CRDs, run the same command in [local rate limit](#3-deploy-waypoint-for-httpbin).
 
 ``` sh
 kmeshctl waypoint apply -n default --name httpbin-waypoint --image ghcr.io/kmesh-net/waypoint:latest
@@ -414,3 +409,7 @@ Expected output:
 429
 429
 ```
+
+The output shows HTTP status codes:
+- **200**: OK. The request was successful.
+- **429**: Too Many Requests. The request was rejected because the rate limit was exceeded.
