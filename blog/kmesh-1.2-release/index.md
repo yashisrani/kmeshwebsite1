@@ -29,7 +29,7 @@ Service discovery is foundational in distributed systems. In `v1.2.0`, Kmesh int
 
 ![image](./images/DNS-Proxy.png)
 
-#### Key Improvments
+#### Key Improvements
 
 **DNS Request Interception**
 
